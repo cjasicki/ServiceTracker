@@ -1,0 +1,1111 @@
+#Created by Chad Jasicki
+#created on: 5/18/2017
+# Updated on  5/19/2017 - added Return Condition
+# update on 5/22/2017 - added s/n look (can scan either s/n or or ID code) 
+# update on 5/23/2017 - bug fixes and changed some minor formating
+# update on 5/24/2017 - added Router problems lista
+# update on 5/25/2017 - bug fixes w/serial number look-ups also fix KB short disc.
+# update on 8/3/2017 - fixed formating and added records " SNRequest and Disposition field to POS_Service_Tracker table update 
+# update on 9/1/2017 - added more history functionality/new form pop-up
+# update on 11/5/2018 - fixed changes to servicenow KB - updated JSON lookups
+# Added timer 3/1/2019
+
+Add-Type -AssemblyName PresentationFramework, System.Windows.Forms
+$inputXML = @"
+<Window x:Class="WpfApplication2.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WpfApplication2"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="893.606" Width="754.272" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.CanContentScroll="True" HorizontalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Background="#FFB0CCD3">
+    <Window.Effect>
+        <DropShadowEffect/>
+    </Window.Effect>
+    <Grid Height="876" VerticalAlignment="Bottom" Margin="-4,-12,10,-1" HorizontalAlignment="Center" ScrollViewer.HorizontalScrollBarVisibility="Visible" Width="740">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="0*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="66*"/>
+            <RowDefinition Height="221*"/>
+        </Grid.RowDefinitions>
+        <Rectangle Fill="#FFB0CCD3" HorizontalAlignment="Left" Height="168" Margin="456,45,0,0" Stroke="#FF3E5AAE" VerticalAlignment="Top" Width="210" StrokeThickness="2" Grid.Row="1"/>
+        <Border BorderThickness="1" Height="183" Margin="72,438,62,0" VerticalAlignment="Top" Background="#FFC4DEE4" Opacity="0.8" Grid.Row="1">
+            <Border.Effect>
+                <DropShadowEffect/>
+            </Border.Effect>
+        </Border>
+        <Border BorderThickness="1" Height="219" Margin="72,217,62,0" VerticalAlignment="Top" Background="#FFC4DEE4" ScrollViewer.VerticalScrollBarVisibility="Disabled" Opacity="0.8" Grid.Row="1">
+            <Border.Effect>
+                <DropShadowEffect/>
+            </Border.Effect>
+        </Border>
+        <TextBlock x:Name="textBlock" HorizontalAlignment="Left" Height="62" Margin="179,31,0,0" TextWrapping="Wrap" Text="POS Service Tracker 2.0" VerticalAlignment="Top" Width="415" FontFamily="Forte" FontSize="38" Foreground="#FFDC0000"/>
+        <TextBox x:Name="txtbox1" HorizontalAlignment="Left" Height="31" Margin="302,104,0,0" TextWrapping="Wrap" Width="158" IsTabStop="False" Background="#FF74CF95" FontWeight="Bold" BorderBrush="#FF3E5AAE" Foreground="#FF00478D" FontSize="18" MaxLines="2147483646" TextOptions.TextFormattingMode="Display" TextAlignment="Center" VerticalAlignment="Top"/>
+        <Button x:Name="button" Content="Submit" HorizontalAlignment="Left" Height="20" Margin="502,534,0,0" VerticalAlignment="Top" Width="143" TabIndex="23" Background="#FFAFDAE4" FontWeight="Bold" Grid.Row="1">
+            <Button.Effect>
+                <DropShadowEffect/>
+            </Button.Effect>
+        </Button>
+        <TextBox x:Name="textBox_serpre" HorizontalAlignment="Left" Height="60" Margin="82,463,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="570" TabIndex="21" Background="#82FFFFFF" Grid.Row="1"/>
+        <Label x:Name="label1" Content="Services Preformed" HorizontalAlignment="Left" Height="25" Margin="88,438,0,0" VerticalAlignment="Top" Width="180" FontWeight="Bold" Grid.Row="1"/>
+        <Label x:Name="label1_Copy1" Content="Problem Found" Height="31" Margin="282,279,320,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold" Foreground="#FF0021F0" Grid.Row="1"/>
+        <TextBox x:Name="CB_txtOther" HorizontalAlignment="Left" Height="18" Margin="248,413,0,0" TextWrapping="Wrap" Text="Other: " VerticalAlignment="Top" Width="364" TabIndex="20" Background="#82FFFFFF" Grid.Row="1"/>
+        <CheckBox x:Name="CB_2" Content="" HorizontalAlignment="Left" Margin="248,313,0,0" VerticalAlignment="Top" Width="168" TabIndex="5" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_5" Content="" HorizontalAlignment="Left" Margin="248,333,0,0" VerticalAlignment="Top" Width="168" TabIndex="8" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_8" Content="" HorizontalAlignment="Left" Margin="248,352,0,0" VerticalAlignment="Top" Width="168" TabIndex="11" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_11" Content="" HorizontalAlignment="Left" Margin="248,371,0,0" VerticalAlignment="Top" Width="168" RenderTransformOrigin="0.469,7.467" TabIndex="14" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_1" Content="" HorizontalAlignment="Left" Margin="85,313,0,0" VerticalAlignment="Top" Width="148" TabIndex="4" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_7" Content="" HorizontalAlignment="Left" Margin="85,352,0,0" VerticalAlignment="Top" Width="148" TabIndex="10" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_10" Content="" HorizontalAlignment="Left" Margin="85,372,0,0" VerticalAlignment="Top" Width="148" TabIndex="13" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_9" Content="" HorizontalAlignment="Left" Margin="444,353,0,0" VerticalAlignment="Top" Width="170" TabIndex="12" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_13" Content="" HorizontalAlignment="Left" Margin="85,391,0,0" VerticalAlignment="Top" Width="148" TabIndex="16" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_15" Content="" HorizontalAlignment="Left" Margin="444,393,0,0" VerticalAlignment="Top" Width="170" RenderTransformOrigin="0.469,7.467" TabIndex="18" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_16" Content="" HorizontalAlignment="Left" Margin="85,411,0,0" VerticalAlignment="Top" Width="148" TabIndex="19" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_3" Content="" HorizontalAlignment="Left" Margin="444,313,0,0" VerticalAlignment="Top" Width="168" TabIndex="6" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_4" Content="" HorizontalAlignment="Left" Margin="85,333,0,0" VerticalAlignment="Top" Width="146" TabIndex="7" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_6" Content="" HorizontalAlignment="Left" Margin="444,333,0,0" VerticalAlignment="Top" Width="168" TabIndex="9" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_12" Content="" HorizontalAlignment="Left" Margin="444,373,0,0" VerticalAlignment="Top" Width="170" TabIndex="15" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <CheckBox x:Name="CB_14" Content="" HorizontalAlignment="Left" Margin="248,392,0,0" VerticalAlignment="Top" Width="170" TabIndex="17" Background="#82FFFFFF" Height="15" Grid.Row="1"/>
+        <ComboBox x:Name="combox_tester" HorizontalAlignment="Left" Height="21" Margin="80,252,0,0" VerticalAlignment="Top" Width="80" IsEditable="True" SelectedIndex="1" TabIndex="1" Background="#FF97FB92" Opacity="0.75" FontWeight="Bold" Grid.Row="1">
+            <ComboBox.Effect>
+                <DropShadowEffect/>
+            </ComboBox.Effect>
+            <ComboBoxItem Content="Sujee" HorizontalAlignment="Left" Width="80"/>
+            <ComboBoxItem Content="Ken" HorizontalAlignment="Left" Width="80"/>
+            <ComboBoxItem Content="Jason" HorizontalAlignment="Left" Width="80"/>
+            <ComboBoxItem Content="Chad" HorizontalAlignment="Left" Width="80"/>
+            <ComboBoxItem Content="Other" HorizontalAlignment="Left" Width="80"/>
+            <ComboBoxItem Content="Tester" HorizontalAlignment="Left" Width="80" IsEnabled="False" IsSelected="True" Visibility="Hidden"/>
+        </ComboBox>
+        <TextBox x:Name="txtbox_sernum" HorizontalAlignment="Left" Height="20" Margin="537,177,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="128" IsTabStop="False" Background="Transparent" FontWeight="Bold" BorderBrush="#FF3E5AAE" Foreground="#FF00478D"/>
+        <Label x:Name="label_Copy" Content="S/N:" HorizontalAlignment="Left" Margin="496,172,0,0" VerticalAlignment="Top" Height="29" FontWeight="Bold" FontSize="14" Width="38"/>
+        <ComboBox x:Name="combox_cond" HorizontalAlignment="Left" Height="21" Margin="315,252,0,0" VerticalAlignment="Top" Width="150" IsEditable="True" SelectedIndex="3" TabIndex="3" Background="#FF97FB92" Opacity="0.75" FontWeight="Bold" Grid.Row="1">
+            <ComboBox.Effect>
+                <DropShadowEffect/>
+            </ComboBox.Effect>
+            <ComboBoxItem Content="Boots Normally" HorizontalAlignment="Left" Width="150" Height="19"/>
+            <ComboBoxItem Content="Boots to System Restore" HorizontalAlignment="Left" Width="150"/>
+            <ComboBoxItem Content="Damaged" HorizontalAlignment="Left" Width="150"/>
+            <ComboBoxItem Content="Boots to BIOS Screen" HorizontalAlignment="Left" Width="150"/>
+            <ComboBoxItem Content="Missing Power" HorizontalAlignment="Left" Width="150"/>
+            <ComboBoxItem Content="Not Used" HorizontalAlignment="Left" Width="150"/>
+            <ComboBoxItem Content="Disk Read Error" HorizontalAlignment="Left" Width="150"/>
+            <ComboBoxItem Content="Corrupted OS or Software" HorizontalAlignment="Left" Width="150"/>
+            <ComboBoxItem Content="Return Condition" IsEnabled="False" IsSelected="True" Visibility="Hidden"/>
+        </ComboBox>
+        <TextBox x:Name="txtbox_KB" HorizontalAlignment="Left" Height="20" Margin="537,200,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="128" IsTabStop="False" Background="Transparent" FontWeight="Bold" BorderBrush="#FF3E5AAE" Foreground="#FF00478D" Grid.RowSpan="2"/>
+        <Label x:Name="label_Copy1" Content="Item " HorizontalAlignment="Left" Margin="297,149,0,0" VerticalAlignment="Top" FontWeight="Bold" FontSize="14" Height="29" Width="41"/>
+        <TextBox x:Name="txtbox_IncNu" HorizontalAlignment="Left" Height="20" Margin="341,200,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="127" IsTabStop="False" Background="Transparent" FontWeight="Bold" BorderBrush="#FF3E5AAE" Foreground="#FF00478D" Grid.RowSpan="2"/>
+        <Label x:Name="label_Copy2" Content="Incident#:" HorizontalAlignment="Left" Margin="265,196,0,0" VerticalAlignment="Top" FontWeight="Bold" FontSize="14" Height="29" Width="76" Grid.RowSpan="2"/>
+        <TextBox x:Name="txtbox_sn" HorizontalAlignment="Left" Height="20" Margin="157,154,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="108" IsTabStop="False" Background="Transparent" FontWeight="Bold" BorderBrush="#FF3E5AAE" Foreground="#FF00478D"/>
+        <Label x:Name="label_Copy3" Content="Salon#" HorizontalAlignment="Left" Margin="103,149,0,0" VerticalAlignment="Top" FontWeight="Bold" FontSize="14" Height="29" Width="56"/>
+        <TextBox x:Name="txtbox1_ShortD" HorizontalAlignment="Left" Height="41" Margin="77,99,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="377" IsTabStop="False" Background="Transparent" VerticalScrollBarVisibility="Auto" FontWeight="Bold" BorderBrush="#FF3E5AAE" Foreground="#FF00478D" BorderThickness="1.5" ClipToBounds="True" SnapsToDevicePixels="True" Grid.Row="1"/>
+        <Label x:Name="label_Copy4" Content="Error Reported" HorizontalAlignment="Left" Margin="81,77,0,0" VerticalAlignment="Top" FontWeight="Bold" RenderTransformOrigin="0.475,0.769" FontSize="14" Height="29" Width="108" Grid.Row="1"/>
+        <TextBox x:Name="txtbox_Desc" HorizontalAlignment="Left"  HorizontalScrollBarVisibility="Visible" Height="56" Margin="77,157,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="377" IsTabStop="False" VerticalScrollBarVisibility="Auto" FontWeight="Bold" BorderThickness="1.5" ClipToBounds="True" SnapsToDevicePixels="True" Foreground="#FF00478D" Grid.Row="1">
+            <TextBox.BorderBrush>
+                <SolidColorBrush Color="#FF3E5AAE" Opacity="0.9"/>
+            </TextBox.BorderBrush>
+            <TextBox.Background>
+                <ImageBrush/>
+            </TextBox.Background>
+        </TextBox>
+        <Label x:Name="label_Copy5" Content="Work Log" HorizontalAlignment="Left" Margin="81,134,0,0" VerticalAlignment="Top" FontWeight="Bold" FontSize="14" Height="29" Width="74" Grid.Row="1"/>
+        <TextBox x:Name="txtbox_Rqn" HorizontalAlignment="Left" Height="20" Margin="156,200,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="110" IsTabStop="False" Background="Transparent" FontWeight="Bold" BorderBrush="#FF3E5AAE" Foreground="#FF00478D" Grid.RowSpan="2"/>
+        <Label x:Name="label_Copy6" Content="Request#:" HorizontalAlignment="Left" Margin="79,194,0,0" VerticalAlignment="Top" FontWeight="Bold" FontSize="14" Height="29" Width="75" Grid.RowSpan="2"/>
+        <Button x:Name="button_clearform" Content="Clear Form" HorizontalAlignment="Left" Height="20" Margin="504,591,0,0" VerticalAlignment="Top" Width="143" TabIndex="25" Background="#FFAFDAE4" FontWeight="Bold" Grid.Row="1">
+            <Button.Effect>
+                <DropShadowEffect/>
+            </Button.Effect>
+        </Button>
+        <TextBox x:Name="txtbox_KB_Desc" HorizontalAlignment="Left" Height="40" Margin="77,45,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="377" IsTabStop="False" Background="Transparent" FontWeight="Bold" BorderBrush="#FF3E5AAE" Foreground="#FF00478D" BorderThickness="1.5" ClipToBounds="True" SnapsToDevicePixels="True" Grid.Row="1"/>
+        <Label x:Name="label_Copy7" Content="KB Description" HorizontalAlignment="Left" Margin="81,22,0,0" VerticalAlignment="Top" FontWeight="Bold" Width="118" FontSize="14" Height="29" Grid.Row="1"/>
+        <Button x:Name="button_Close" Content="Close Without Saving" HorizontalAlignment="Left" Height="20" Margin="503,563,0,0" VerticalAlignment="Top" Width="143" TabIndex="24" Background="#FFAFDAE4" FontWeight="Bold" Grid.Row="1">
+            <Button.Effect>
+                <DropShadowEffect/>
+            </Button.Effect>
+        </Button>
+        <Label x:Name="label1_Copy" Content="Complete Form Below" HorizontalAlignment="Left" Height="36" Margin="239,214,0,0" VerticalAlignment="Top" Width="228" FontSize="20" FontWeight="Bold" Foreground="#FF0021F0" Grid.Row="1"/>
+        <Label x:Name="label1_Copy2" Content="Unit Status" Height="31" Margin="87,533,538,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold" Grid.Row="1"/>
+        <ComboBox x:Name="combox_Status" HorizontalAlignment="Left" Height="21" Margin="185,540,0,0" VerticalAlignment="Top" Width="135" SelectedIndex="7" IsEditable="True" TabIndex="22" Background="Black" Opacity="0.75" Grid.Row="1">
+            <ComboBox.Effect>
+                <DropShadowEffect/>
+            </ComboBox.Effect>
+            <ComboBoxItem Content="Move to ready stock" HorizontalAlignment="Left" Width="135"/>
+            <ComboBoxItem Content="Not repairable" HorizontalAlignment="Left" Width="135"/>
+            <ComboBoxItem Content="On Hold" HorizontalAlignment="Left" Width="135"/>
+            <ComboBoxItem Content="Sent out for Repair" HorizontalAlignment="Left" Width="135"/>
+            <ComboBoxItem Content="Selection Required" HorizontalAlignment="Left" Width="135" IsEnabled="False" IsSelected="True" Visibility="Hidden"/>
+        </ComboBox>
+        <ComboBox x:Name="combox_reason" HorizontalAlignment="Left" Height="21" Margin="163,252,0,0" VerticalAlignment="Top" Width="150" IsEditable="True" SelectedIndex="2" TabIndex="2" Background="#FF97FB92" Opacity="0.75" FontWeight="Bold" Grid.Row="1">
+            <ComboBox.Effect>
+                <DropShadowEffect/>
+            </ComboBox.Effect>
+            <ComboBoxItem Content="Return (Break/Fix)" HorizontalAlignment="Left" Width="150"/>
+            <ComboBoxItem Content="Return From RMA Repair" HorizontalAlignment="Left" Width="150"/>
+            <ComboBoxItem Content="Upgraded/Rollout" HorizontalAlignment="Left" Width="150" Background="Transparent"/>
+            <ComboBoxItem Content="Unknown" HorizontalAlignment="Left" Width="150"/>
+            <ComboBoxItem Content="From Home Office" HorizontalAlignment="Left" Width="150"/>
+            <ComboBoxItem Content="Closer or Vendition" HorizontalAlignment="Left" Width="150"/>
+            <ComboBoxItem Content="No longer needed" HorizontalAlignment="Left" Width="150"/>
+            <ComboBoxItem Content="Reason Retruned" HorizontalAlignment="Left" Width="150" IsEnabled="False" IsSelected="True" Visibility="Hidden"/>
+        </ComboBox>
+        <TextBox x:Name="txtbox_Sku" HorizontalAlignment="Left" Height="20" Margin="340,177,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="127" IsTabStop="False" Background="Transparent" FontWeight="Bold" BorderBrush="#FF3E5AAE" Foreground="#FF00478D"/>
+        <Label x:Name="label_Sku" Content="Sku#" HorizontalAlignment="Left" Margin="298,173,0,0" VerticalAlignment="Top" FontWeight="Bold" FontSize="14" Height="29" Width="42" Grid.RowSpan="2"/>
+        <TextBox x:Name="txtbox_Equp" HorizontalAlignment="Left" Height="20" Margin="339,154,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="127" IsTabStop="False" Background="Transparent" FontWeight="Bold" BorderBrush="#FF3E5AAE" Foreground="#FF00478D"/>
+        <Label x:Name="label_Copy8" Content="KB Used" HorizontalAlignment="Left" Margin="471,196,0,0" VerticalAlignment="Top" FontWeight="Bold" FontSize="14" Height="29" Width="65" FontStyle="Italic" Grid.RowSpan="2"/>
+        <TextBox x:Name="txtbox_assitID" HorizontalAlignment="Left" Height="20" Margin="537,154,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="128" IsTabStop="False" Background="Transparent" FontWeight="Bold" BorderBrush="#FF3E5AAE" Foreground="#FF00478D" ClipToBounds="True" SnapsToDevicePixels="True"/>
+        <Label x:Name="label_Sku_Copy" Content="Asset ID" HorizontalAlignment="Left" Margin="477,150,0,0" VerticalAlignment="Top" FontWeight="Bold" RenderTransformOrigin="0.526,1.385" FontSize="14" Height="29" Width="60"/>
+        <ComboBox x:Name="combox_match" HorizontalAlignment="Left" Height="21" Margin="468,252,0,0" VerticalAlignment="Top" Width="180" IsEditable="True" SelectedIndex="3" TabIndex="3" Opacity="0.75" FontWeight="Bold" Grid.Row="1">
+            <ComboBox.Effect>
+                <DropShadowEffect/>
+            </ComboBox.Effect>
+            <ComboBoxItem Content="Problem match reported" HorizontalAlignment="Left" Width="180" Height="19"/>
+            <ComboBoxItem Content="Reported problem was not seen" HorizontalAlignment="Left" Width="180"/>
+            <ComboBoxItem Content="N/A" HorizontalAlignment="Left" Width="180"/>
+            <ComboBoxItem Content="Reported Error" HorizontalAlignment="Left" Width="180" IsEnabled="False" IsSelected="True" Visibility="Hidden"/>
+        </ComboBox>
+        <ListBox x:Name="listbox1" HorizontalAlignment="Left" Height="91" Margin="459,92,0,0" VerticalAlignment="Top" Width="205" Foreground="#FF00478D" BorderBrush="#FF3E5AAE" Grid.Row="1">
+            <ListBox.Background>
+                <ImageBrush/>
+            </ListBox.Background>
+        </ListBox>
+        <Label x:Name="label_Copy9" Content="ID" HorizontalAlignment="Left" Margin="478,67,0,0" VerticalAlignment="Top" FontWeight="Bold" FontSize="14" Height="29" Width="75" Grid.Row="1"/>
+        <Label x:Name="label_Copy10" Content="Date" HorizontalAlignment="Left" Margin="529,67,0,0" VerticalAlignment="Top" FontWeight="Bold" FontSize="14" Height="29" Width="49" RenderTransformOrigin="0.153,0.448" Grid.Row="1"/>
+        <Label x:Name="label_Sku_Copy1" Content="Asset History" HorizontalAlignment="Left" Margin="496,45,0,0" VerticalAlignment="Top" FontWeight="Bold" RenderTransformOrigin="0.526,1.385" FontSize="14" Height="29" Width="125" Grid.Row="1"/>
+        <Button x:Name="button_history" Content="Open Selected Event" HorizontalAlignment="Left" Height="19" Margin="481,186,0,0" VerticalAlignment="Top" Width="131" TabIndex="25" Background="#FFAFDAE4" FontWeight="Bold" Grid.Row="1">
+            <Button.Effect>
+                <DropShadowEffect/>
+            </Button.Effect>
+        </Button>
+        <Label x:Name="label_Copy11" Content="Snow#" HorizontalAlignment="Left" Margin="583,67,0,0" VerticalAlignment="Top" FontWeight="Bold" FontSize="14" Height="29" Width="64" RenderTransformOrigin="1.867,0.345" Grid.Row="1"/>
+        <Label x:Name="label_Copy12" Content="RMA State#" HorizontalAlignment="Left" Margin="68,172,0,0" VerticalAlignment="Top" FontWeight="Bold" FontSize="14" Height="29" Width="90"/>
+        <TextBox x:Name="txtstate" HorizontalAlignment="Left" Height="20" Margin="157,177,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="108" IsTabStop="False" Background="Transparent" FontWeight="Bold" BorderBrush="#FF3E5AAE" Foreground="#FF00478D"/>
+        <TextBox x:Name="txtTimeEst" HorizontalAlignment="Left" Height="30" Margin="239,573,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="68" IsTabStop="False" Background="#FF74CF95" FontWeight="Bold" BorderBrush="#FF3E5AAE" Foreground="#FF00478D" FontSize="18" Grid.Row="1" TextAlignment="Center"/>
+        <Label x:Name="label1_Copy3" Content="Enter Est. Time working &#xD;&#xA; on unit (in Minutes): " Height="40" Margin="94,567,481,0" VerticalAlignment="Top" FontWeight="Bold" Grid.Row="1"/>
+        <TextBox x:Name="Time" HorizontalAlignment="Left" Height="31" Margin="344,546,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="131" IsTabStop="False" Background="#FFCED43E" FontWeight="Bold" BorderBrush="#FF3E5AAE" Foreground="Black" FontSize="18" MaxLines="2147483646" TextOptions.TextFormattingMode="Display" TextAlignment="Center" Grid.Row="1"/>
+        <Button x:Name="Start" Content="Start" HorizontalAlignment="Left" Height="20" Margin="344,580,0,0" VerticalAlignment="Top" Width="41" TabIndex="23" Background="#FFAFDAE4" FontWeight="Bold" Grid.Row="1">
+            <Button.Effect>
+                <DropShadowEffect/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="Stop" Content="Stop" HorizontalAlignment="Left" Height="20" Margin="387,580,0,0" VerticalAlignment="Top" Width="42" TabIndex="23" Background="#FFAFDAE4" FontWeight="Bold" Grid.Row="1">
+            <Button.Effect>
+                <DropShadowEffect/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="Reset" Content="Reset" HorizontalAlignment="Left" Height="20" Margin="431,580,0,0" VerticalAlignment="Top" Width="42" TabIndex="23" Background="#FFAFDAE4" FontWeight="Bold" Grid.Row="1" RenderTransformOrigin="0.5,0.5">
+            <Button.Effect>
+                <DropShadowEffect/>
+            </Button.Effect>
+        </Button>
+        <Label x:Name="label_Copy13" Content="Scan SN or RMA" HorizontalAlignment="Left" Margin="321,78,0,0" FontWeight="Bold" FontSize="14" Height="29" Width="121" VerticalAlignment="Top"/>
+    </Grid>
+</Window>
+"@       
+ 
+$inputXML = $inputXML -replace 'mc:Ignorable="d"','' -replace "x:N",'N'  -replace '^<Win.*', '<Window'
+
+[void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
+[xml]$XAML = $inputXML
+#Read XAML
+ 
+$reader=(New-Object System.Xml.XmlNodeReader $xaml) 
+try{$Form=[Windows.Markup.XamlReader]::Load( $reader )}
+catch{Write-Host "Unable to load Windows.Markup.XamlReader. Double-check syntax and ensure .net is installed."}
+ 
+$xaml.SelectNodes("//*[@Name]") | %{Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name)}
+ 
+Function Get-FormVariables{
+if ($global:ReadmeDisplay -ne $true){Write-host "If you need to reference this display again, run Get-FormVariables" -ForegroundColor Yellow;$global:ReadmeDisplay=$true}
+write-host "Found the following interactable elements from our form" -ForegroundColor Cyan
+get-variable WPF*
+}
+ 
+
+ Function sampledata{
+$WPFtxtbox1.text = "541462"
+$WPFtxtstate.text = "New"
+$WPFtxtbox_sn.text = "6611"
+$WPFtxtbox_KB.text = "KB0011572 v1.0"
+$WPFtxtbox_sernum.text = "A12X000299"
+$WPFtxtbox_Equp.text = "All-In-One PC"
+$WPFtxtbox_IncNu.text = "INC0456662"
+$WPFtxtbox_Rqn.text = "REQ0035363"
+$WPFtxtbox_Sku.text = "20006202"
+$WPFtxtbox_assitID.text = "850647"
+$WPFtxtbox_KB_Desc.text = '"POS: Windows Blue Screen Error, A.K.A. "Blue Screen Of Death""'
+$WPFtxtbox1_ShortD.text = "POS Degraded UPS Arr Thu, 2/1 by EoD • •  *POS: Windows Blue Screen Error"
+$WPFtxtbox_Desc.text = '"Stylist called stating that the POS was showing a blue screen with error message: "IRQL NOT LESS OR EQUAL"
+Advised to hold down power button until black screen shows
+Advised to power on POS after 30 seconds
+POS booted and loaded SuperSalon successfully
+Remoted into the POS
+Gift Card Balance Check - Balance: $0.00
+Stylist stated that they got a hardware error screen earlier in the day
+Reached out to Forrest W.
+Sending out replacement POS
+No further issues"'
+
+ }
+
+
+Function Hist {
+$inputXML4 = @"
+<Window x:Class="WPF1App4.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WPF1App4"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="540.779" Width="673.464">
+	<Grid HorizontalAlignment="Left" Width="663" Margin="0,0,0,9">
+		<Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="137" Margin="18,30,0,0" Stroke="Black" VerticalAlignment="Top" Width="635"/>
+		<Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="294" Margin="18,197,0,0" Stroke="Black" VerticalAlignment="Top" Width="635" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+		<Label Content="Repair Notes" HorizontalAlignment="Left" Height="25" Margin="18,5,0,0" VerticalAlignment="Top" Width="110" FontWeight="Bold"/>
+		<TextBox x:Name="ID" HorizontalAlignment="Left" Height="20" Margin="29,50,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="127"/>
+		<TextBox x:Name="Condition" HorizontalAlignment="Left" Height="20" Margin="30,82,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="127"/>
+		<TextBox x:Name="Reason_Retruned" HorizontalAlignment="Left" Height="20" Margin="164,82,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="157"/>
+		<TextBox x:Name="Problem" HorizontalAlignment="Left" Height="21" Margin="327,81,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="318"/>
+		<TextBox x:Name="Date" HorizontalAlignment="Left" Height="18" Margin="161,50,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="87"/>
+		<TextBox x:Name="Tester" HorizontalAlignment="Left" Height="18" Margin="327,50,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="87"/>
+		<TextBox x:Name="Disposition" HorizontalAlignment="Left" Height="18" Margin="461,50,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="184"/>
+		<TextBlock x:Name="Services_Preformed" HorizontalAlignment="Left" Height="38" Margin="25,122,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="620"/>
+		<Label Content="Services Preformed" HorizontalAlignment="Left" Height="21" Margin="25,102,0,0" VerticalAlignment="Top" Width="110" FontSize="10" FontWeight="Bold" FontStyle="Italic"/>
+		<Label x:Name="Problem1" Content="Services Preformed" HorizontalAlignment="Left" Height="21" Margin="326,65,0,0" VerticalAlignment="Top" Width="87" FontSize="10" FontWeight="Bold" FontStyle="Italic"/>
+		<Label Content="Reason Retruned" HorizontalAlignment="Left" Height="21" Margin="162,64,0,0" VerticalAlignment="Top" Width="94" FontSize="10" FontWeight="Bold" FontStyle="Italic"/>
+		<Label Content="Condition" HorizontalAlignment="Left" Height="21" Margin="30,65,0,0" VerticalAlignment="Top" Width="86" FontSize="10" FontWeight="Bold" FontStyle="Italic"/>
+		<Label Content="Date" HorizontalAlignment="Left" Height="21" Margin="164,32,0,0" VerticalAlignment="Top" Width="86" FontSize="10" FontWeight="Bold" FontStyle="Italic"/>
+		<Label Content="ID&#x9;" HorizontalAlignment="Left" Height="21" Margin="31,33,0,0" VerticalAlignment="Top" Width="87" FontSize="10" FontWeight="Bold" FontStyle="Italic"/>
+		<Label Content="Disposition" HorizontalAlignment="Left" Height="21" Margin="464,32,0,0" VerticalAlignment="Top" Width="86" FontSize="10" FontWeight="Bold" FontStyle="Italic"/>
+		<Label Content="Tester" HorizontalAlignment="Left" Height="21" Margin="328,33,0,0" VerticalAlignment="Top" Width="86" FontSize="10" FontWeight="Bold" FontStyle="Italic"/>
+		<Label Content="ServiceNow" HorizontalAlignment="Left" Height="25" Margin="18,172,0,0" VerticalAlignment="Top" Width="110" FontWeight="Bold"/>
+		<TextBlock x:Name="foundr" HorizontalAlignment="Left" Height="20" Margin="115,5,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="271" FontSize="14" FontWeight="Bold"/>
+		<TextBlock x:Name="TB__WorkL" HorizontalAlignment="Left" Height="127" Margin="25,358,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="620" ScrollViewer.VerticalScrollBarVisibility="Auto"><Run Text=""/><LineBreak/><Run/></TextBlock>
+		<TextBlock x:Name="TB_error_reported" HorizontalAlignment="Left" Height="40" Margin="25,302,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="620" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+		<TextBlock x:Name="TB_KB_Disc" HorizontalAlignment="Left" Height="28" Margin="25,252,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="620" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+		<Label Content="KB Discription" HorizontalAlignment="Left" Height="22" Margin="25,230,0,0" VerticalAlignment="Top" Width="110" FontSize="10" FontWeight="Bold" FontStyle="Italic"/>
+		<Label Content="Error Reported" HorizontalAlignment="Left" Height="22" Margin="25,280,0,0" VerticalAlignment="Top" Width="110" FontSize="10" FontWeight="Bold" FontStyle="Italic"/>
+		<Label Content="Work Log" HorizontalAlignment="Left" Height="24" Margin="25,334,0,0" VerticalAlignment="Top" Width="110" FontSize="10" FontWeight="Bold" FontStyle="Italic"/>
+		<Label Content="KB Description:" HorizontalAlignment="Left" Height="22" Margin="25,197,0,0" VerticalAlignment="Top" Width="85" FontSize="10" FontWeight="Bold" FontStyle="Italic"/>
+		<TextBlock x:Name="TB_KBnumber" HorizontalAlignment="Left" Height="17" Margin="115,202,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="165" FontSize="10"/>
+		<Label Content="Inc #:" HorizontalAlignment="Left" Height="22" Margin="297,197,0,0" VerticalAlignment="Top" Width="38" FontSize="10" FontWeight="Bold" FontStyle="Italic"/>
+		<TextBlock x:Name="TB_incnum" HorizontalAlignment="Left" Height="17" Margin="335,202,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="92" FontSize="10"/>
+		<Label Content="Request#" HorizontalAlignment="Left" Height="22" Margin="447,197,0,0" VerticalAlignment="Top" Width="53" FontSize="10" FontWeight="Bold" FontStyle="Italic"/>
+		<TextBlock x:Name="TB_rq" HorizontalAlignment="Left" Height="17" Margin="505,202,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="123" FontSize="10"/>
+	</Grid>
+</Window>
+"@     
+ 
+$inputXML4 = $inputXML4 -replace 'mc:Ignorable="d"','' -replace "x:N",'N'  -replace '^<Win.*', '<Window'
+
+[void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
+[xml]$XAML4 = $inputXML4
+#Read XAML
+ 
+$reader4=(New-Object System.Xml.XmlNodeReader $xaml4) 
+try{$Form4=[Windows.Markup.XamlReader]::Load( $reader4 )}
+catch{Write-Host "Unable to load Windows.Markup.XamlReader. Double-check syntax and ensure .net is installed."}
+ 
+$xaml4.SelectNodes("//*[@Name]") | %{Set-Variable -Name "WPF1$($_.Name)" -Value $Form4.FindName($_.Name)}
+ 
+Function Get-FormVariables4{
+if ($global:ReadmeDisplay -ne $true){Write-host "If you need to reference this display again, run Get-FormVariables4" -ForegroundColor Yellow;$global:ReadmeDisplay=$true}
+write-host "Found the following interactable elements from our form" -ForegroundColor Cyan
+get-variable WPF1*
+}
+ 
+$adOpenStatic = 3
+$adLockOptimistic = 3
+$conn14=New-Object -com "ADODB.Connection"
+$rs14 = New-Object -com "ADODB.Recordset"
+try{
+$conn14.Open('Provider=Microsoft.ACE.OLEDB.12.0;Data Source=K:\POS Database\POS Construction.mdb;Persist Security Info=True;')
+$rs14.Open("SELECT ID, Condition, Reason_Retruned, Problem, Date, Services_Preformed, Tester, 'Reported Error', SNRequest, Disposition FROM POS_Service_Tracker WHERE ID = " + $strid3, $conn14,$adOpenStatic,$adLockOptimistic)
+}
+catch{
+    $ErrorMessage = $_.Exception.Message
+    $FailedItem = $_.Exception.ItemName
+[System.Windows.MessageBox]::Show("Can't Conntext to DataBase`n`n" + $ErrorMessage + $FailedItem)
+}
+$strRCi14=$rs14.RecordCount
+
+if ($strRCi14 -eq 0){
+$WPF1foundr.text = "No Repair Serive Record Found"
+} 
+
+$WPF1ID.text = $rs14.Fields.Item("ID").value
+$WPF1Condition.text = $rs14.Fields.Item("Condition").value
+$WPF1Reason_Retruned.text = $rs14.Fields.Item("Reason_Retruned").value
+$WPF1Problem.text = $rs14.Fields.Item("Problem").value
+$WPF1Date.text = $rs14.Fields.Item("Date").value
+$WPF1Services_Preformed.text = $rs14.Fields.Item("Services_Preformed").value
+$WPF1Tester.text = $rs14.Fields.Item("Tester").value
+
+$SNRequest = $rs14.Fields.Item("SNRequest").value
+
+$WPF1Disposition.text = $rs14.Fields.Item("Disposition").value
+$strRCi14=$rs14.RecordCount
+$conn14.Close
+$rs14.Close
+
+#servicenow look up (JSON) sc_request table
+$request = 'https://regis.service-now.com/sc_request.do?JSONv2&sysparm_action=getRecords&sysparm_query=number=' + $strid5
+$username = "UserName"
+$password = "Password" | ConvertTo-SecureString -asPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential($username,$password)
+$cv3 = Invoke-WebRequest $request -Credential $cred  |
+ConvertFrom-Json
+$strIncNum1000 = $cv3.records.parent
+
+#servicenow look up (JSON) incident table
+$request = 'https://regis.service-now.com/incident.do?JSONv2&sysparm_action=getRecords&sysparm_query=number=' + $strIncNum1000
+$username = "UserName"
+$password = "Password" | ConvertTo-SecureString -asPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential($username,$password)
+$cv2 = Invoke-WebRequest $request -Credential $cred  |
+ConvertFrom-Json
+$WPF1TB_KBnumber.Text = $cv2.records.u_kb_article
+$sss1 = $cv2.records.u_kb_article
+$WPF1TB_error_reported.Text = $cv2.records.short_description 
+$WPF1TB__WorkL.Text = $cv2.records.description 
+$WPF1TB_incnum.Text = $strIncNum1
+$WPF1TB_rq.Text = $strid5
+
+#servicenow look up (JSON) kb_knowledge table
+$KBlookup = 'https://regis.service-now.com/kb_knowledge.do?JSONv2&sysparm_action=getRecords&sysparm_query=display_number=' + $sss1
+$username = "UserName"
+$password = "Password" | ConvertTo-SecureString -asPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential($username,$password)
+$cv4 = Invoke-WebRequest $KBlookup -Credential $cred  |
+ConvertFrom-Json
+$KBlookupvalue = $cv4.records.short_description
+$WPF1TB_KB_Disc.text =  $KBlookupvalue
+$WPFtextBox_serpre.Focus()
+
+Get-FormVariables4
+
+# Shows the form
+write-host "To show the form, run the following" -ForegroundColor Cyan
+$Form4.ShowDialog() | out-null
+}
+
+Function Clearform{
+$StrValPro = ""
+$WPFCB_1.IsChecked=$false
+$WPFCB_2.IsChecked=$false
+$WPFCB_3.IsChecked=$false
+$WPFCB_4.IsChecked=$false
+$WPFCB_5.IsChecked=$false
+$WPFCB_6.IsChecked=$false
+$WPFCB_7.IsChecked=$false
+$WPFCB_8.IsChecked=$false
+$WPFCB_9.IsChecked=$false
+$WPFCB_10.IsChecked=$false
+$WPFCB_11.IsChecked=$false
+$WPFCB_12.IsChecked=$false
+$WPFCB_13.IsChecked=$false
+$WPFCB_14.IsChecked=$false
+$WPFCB_15.IsChecked=$false
+$WPFCB_16.IsChecked=$false
+
+$WPFCB_1.isEnabled = $false
+$WPFCB_2.isEnabled = $false
+$WPFCB_3.isEnabled = $false
+$WPFCB_4.isEnabled = $false
+$WPFCB_5.isEnabled = $false
+$WPFCB_6.isEnabled = $false
+$WPFCB_7.isEnabled = $false
+$WPFCB_8.isEnabled = $false
+$WPFCB_9.isEnabled = $false
+$WPFCB_10.isEnabled = $false
+$WPFCB_11.isEnabled = $false
+$WPFCB_12.isEnabled = $false
+$WPFCB_13.isEnabled = $false
+$WPFCB_14.isEnabled = $false
+$WPFCB_15.isEnabled = $false
+$WPFCB_16.isEnabled = $false
+
+$WPFCB_1.content = ""
+$WPFCB_2.content = ""
+$WPFCB_3.content = ""
+$WPFCB_4.content = ""
+$WPFCB_5.content = ""
+$WPFCB_6.content = ""
+$WPFCB_7.content = ""
+$WPFCB_8.content = ""
+$WPFCB_9.content = ""
+$WPFCB_10.content = ""
+$WPFCB_11.content = ""
+$WPFCB_12.content = ""
+$WPFCB_13.content = ""
+$WPFCB_14.content = ""
+$WPFCB_15.content = ""
+$WPFCB_16.content = ""
+$WPFCB_txtOther.Text = "Other: "
+$WPFcombox_cond.Text = "Condition"
+$WPFcombox_reason.Text = "Reason Returned"
+$WPFcombox_Status.Text = "Selection Required"
+$WPFcombox_tester.Text = "Tester?"
+$WPFcombox_match.Text = "Reported Error"
+$WPFtxtbox1.Text = ""
+$WPFtxtbox_sernum.Text = ""
+$WPFtxtbox_Rqn.Text = ""
+$WPFtxtbox_IncNu.Text = ""
+$WPFtxtbox_KB.Text = ""
+$WPFtxtbox_sn.Text = ""
+$WPFtxtbox1_ShortD.Text = ""
+$WPFtxtbox_Desc.Text = ""
+$WPFtxtbox_Rqn.Text = ""
+$WPFtextBox_serpre.Text = ""
+$WPFtxtbox_Equp.Text = ""
+$WPFtxtbox_assitID.Text = ""
+$WPFtxtbox_Sku.Text = ""
+$WPFtxtbox_KB_Desc.Text = ""
+$WPFtxtstate.Text = ""
+$WPFtxtTimeEst.Text = ""
+$WPFlistbox1.Items.Clear();
+$WPFtxtbox1.Focus()
+}
+
+Function SetDefults{If ($WPFtxtbox_Equp.text -eq "All-In-One PC" -or $WPFtxtbox_Equp.text -eq "WSW" ){
+ $WPFCB_1.isEnabled = $true
+ $WPFCB_2.isEnabled = $true
+ $WPFCB_3.isEnabled = $true
+ $WPFCB_4.isEnabled = $true
+ $WPFCB_5.isEnabled = $true
+ $WPFCB_6.isEnabled = $true
+ $WPFCB_7.isEnabled = $true
+ $WPFCB_8.isEnabled = $true
+ $WPFCB_9.isEnabled = $true
+ $WPFCB_10.isEnabled = $true
+ $WPFCB_11.isEnabled = $true
+ $WPFCB_12.isEnabled = $true
+ $WPFCB_13.isEnabled = $true
+ $WPFCB_14.isEnabled = $true
+ $WPFCB_15.isEnabled = $true
+ $WPFCB_16.isEnabled = $true
+
+		$WPFCB_1.content = "Reset BIOS" 
+		$WPFCB_2.Content = "Bad NIC (Motherboard)"
+		$WPFCB_3.Content = "Capacitors"
+		$WPFCB_4.Content = "No Problem Found"
+		$WPFCB_5.Content = "HDD Failure"
+		$WPFCB_6.Content = "Software"
+		$WPFCB_7.Content = "OS Wont Boot"
+		$WPFCB_8.Content = "Unseated Hardware/Cables"
+		$WPFCB_9.Content = "Power Supply"
+		$WPFCB_10.Content = "Touch Screen"
+		$WPFCB_11.Content = "Monitor"
+		$WPFCB_12.Content = "Motherboard"
+		$WPFCB_13.Content = "Defective RAM"
+		$WPFCB_14.Content = "CMOS Battery"
+		$WPFCB_15.Content = "Not Tested"
+		$WPFCB_16.Content = "CPU Fan"
+}
+ElseIf ($WPFtxtbox_Equp.text -eq "Credit Card Reader"){
+        $WPFCB_1.isEnabled = $true
+        $WPFCB_2.isEnabled = $true
+        $WPFCB_3.isEnabled = $true
+        $WPFCB_4.isEnabled = $true
+        $WPFCB_5.isEnabled = $true
+        $WPFCB_6.isEnabled = $true
+        $WPFCB_7.isEnabled = $true
+        $WPFCB_8.isEnabled = $true
+        $WPFCB_9.isEnabled = $true
+        $WPFCB_10.isEnabled = $true
+        $WPFCB_11.isEnabled = $false
+        $WPFCB_12.isEnabled = $false
+        $WPFCB_13.isEnabled = $false
+        $WPFCB_14.isEnabled = $false
+        $WPFCB_15.isEnabled = $false
+        $WPFCB_16.isEnabled = $false
+
+        $WPFCB_1.content = "Sytlus pen broken" 
+		$WPFCB_2.Content = "Stylus port on CCT broken"
+		$WPFCB_3.Content = "Smart card read error"
+		$WPFCB_4.Content = "Software Defect"
+		$WPFCB_5.Content = "Card swipe not working"
+		$WPFCB_6.Content = "Display Issue"
+		$WPFCB_7.Content = "Maintenance required - UT"
+		$WPFCB_8.Content = "No Problem Found"
+		$WPFCB_9.Content = "No Key Injection"
+		$WPFCB_10.Content = "N/A"
+		$WPFCB_11.Content = ""
+		$WPFCB_12.Content = ""
+		$WPFCB_13.Content = ""
+		$WPFCB_14.Content = ""
+		$WPFCB_15.Content = ""
+		$WPFCB_16.Content = ""
+
+}
+ElseIf ($WPFtxtbox_Equp.text -eq "Printer"){
+        $WPFCB_1.isEnabled = $true
+        $WPFCB_2.isEnabled = $true
+        $WPFCB_3.isEnabled = $true
+        $WPFCB_4.isEnabled = $true
+        $WPFCB_5.isEnabled = $true
+        $WPFCB_6.isEnabled = $true
+        $WPFCB_7.isEnabled = $true
+        $WPFCB_8.isEnabled = $true
+        $WPFCB_9.isEnabled = $false
+        $WPFCB_10.isEnabled = $false
+        $WPFCB_11.isEnabled = $false
+        $WPFCB_12.isEnabled = $false
+        $WPFCB_13.isEnabled = $false
+        $WPFCB_14.isEnabled = $false
+        $WPFCB_15.isEnabled = $false
+        $WPFCB_16.isEnabled = $false
+
+        $WPFCB_1.content = "Defective Print Head" 
+		$WPFCB_2.Content = "Replace Toner Message"
+		$WPFCB_3.Content = "Empty Toner"
+		$WPFCB_4.Content = "Cutter Not Functional"
+		$WPFCB_5.Content = "Drum Error"
+		$WPFCB_6.Content = "Load Paper Error"
+		$WPFCB_7.Content = "Paper feed gear assy."
+		$WPFCB_8.Content = "Paper Jam"
+		$WPFCB_9.Content = ""
+		$WPFCB_10.Content = ""
+		$WPFCB_11.Content = ""
+		$WPFCB_12.Content = ""
+		$WPFCB_13.Content = ""
+		$WPFCB_14.Content = ""
+		$WPFCB_15.Content = ""
+		$WPFCB_16.Content = ""
+}
+ElseIf ($WPFtxtbox_Equp.text -eq "Network Hardware"){
+        $WPFCB_1.isEnabled = $true
+        $WPFCB_2.isEnabled = $true
+        $WPFCB_3.isEnabled = $true
+        $WPFCB_4.isEnabled = $true
+        $WPFCB_5.isEnabled = $true
+        $WPFCB_6.isEnabled = $true
+        $WPFCB_7.isEnabled = $true
+        $WPFCB_8.isEnabled = $true
+        $WPFCB_9.isEnabled = $false
+        $WPFCB_10.isEnabled = $false
+        $WPFCB_11.isEnabled = $false
+        $WPFCB_12.isEnabled = $false
+        $WPFCB_13.isEnabled = $false
+        $WPFCB_14.isEnabled = $false
+        $WPFCB_15.isEnabled = $false
+        $WPFCB_16.isEnabled = $false
+
+		$WPFCB_1.content = "Missing Power" 
+		$WPFCB_2.Content = "Fan not spining"
+		$WPFCB_3.Content = "Bad WIC Slot/no power"
+		$WPFCB_4.Content = "Port is bad"
+		$WPFCB_5.Content = "Won't boot"
+		$WPFCB_6.Content = "Console is Not Responsive"
+		$WPFCB_7.Content = "N/A"
+		$WPFCB_8.Content = ""
+		$WPFCB_9.Content = ""
+		$WPFCB_10.Content = ""
+		$WPFCB_11.Content = ""
+		$WPFCB_12.Content = ""
+		$WPFCB_13.Content = ""
+		$WPFCB_14.Content = ""
+		$WPFCB_15.Content = ""
+		$WPFCB_16.Content = ""
+}
+ElseIf ($WPFtxtbox_Equp.text -eq "Digi LTE Modem"){
+        $WPFCB_1.isEnabled = $true
+        $WPFCB_2.isEnabled = $true
+        $WPFCB_3.isEnabled = $true
+        $WPFCB_4.isEnabled = $true
+        $WPFCB_5.isEnabled = $true
+        $WPFCB_6.isEnabled = $true
+        $WPFCB_7.isEnabled = $true
+        $WPFCB_8.isEnabled = $false
+        $WPFCB_9.isEnabled = $false
+        $WPFCB_10.isEnabled = $false
+        $WPFCB_11.isEnabled = $false
+        $WPFCB_12.isEnabled = $false
+        $WPFCB_13.isEnabled = $false
+        $WPFCB_14.isEnabled = $false
+        $WPFCB_15.isEnabled = $false
+        $WPFCB_16.isEnabled = $false
+
+		$WPFCB_1.content = "POWER LED failure" 
+		$WPFCB_2.Content = "SIGNAL LED failure"
+		$WPFCB_3.Content = "SERVICE LED failure"
+		$WPFCB_4.Content = "Cellular module not shown on USB BUS"
+		$WPFCB_5.Content = "SIM DETECTION FAIL"
+		$WPFCB_6.Content = "Cellular signal strength low"
+		$WPFCB_7.Content = "ETH 0 test failed"
+		$WPFCB_8.Content = "n/a"
+		$WPFCB_9.Content = ""
+		$WPFCB_10.Content = ""
+		$WPFCB_11.Content = ""
+		$WPFCB_12.Content = ""
+		$WPFCB_13.Content = ""
+		$WPFCB_14.Content = ""
+		$WPFCB_15.Content = ""
+		$WPFCB_16.Content = ""
+}
+Else{
+        $WPFCB_1.isEnabled = $true
+        $WPFCB_2.isEnabled = $true
+        $WPFCB_3.isEnabled = $true
+        $WPFCB_4.isEnabled = $false
+        $WPFCB_5.isEnabled = $false
+        $WPFCB_6.isEnabled = $false
+        $WPFCB_7.isEnabled = $false
+        $WPFCB_8.isEnabled = $false
+        $WPFCB_9.isEnabled = $false
+        $WPFCB_10.isEnabled = $false
+        $WPFCB_11.isEnabled = $false
+        $WPFCB_12.isEnabled = $false
+        $WPFCB_13.isEnabled = $false
+        $WPFCB_14.isEnabled = $false
+        $WPFCB_15.isEnabled = $false
+        $WPFCB_16.isEnabled = $false
+
+		$WPFCB_1.content = "Pass" 
+		$WPFCB_2.Content = "Fail"
+		$WPFCB_3.Content = "n/a"
+		$WPFCB_4.Content = ""
+		$WPFCB_5.Content = ""
+		$WPFCB_6.Content = ""
+		$WPFCB_7.Content = ""
+		$WPFCB_8.Content = ""
+		$WPFCB_9.Content = ""
+		$WPFCB_10.Content = ""
+		$WPFCB_11.Content = ""
+		$WPFCB_12.Content = ""
+		$WPFCB_13.Content = ""
+		$WPFCB_14.Content = ""
+		$WPFCB_15.Content = ""
+		$WPFCB_16.Content = ""
+}
+}
+
+Function IDenter{ 
+[void][Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic')
+$title = 'POS Service Tracker Ver 1.1'
+$msg   = '
+Enter ID Code'
+$gtname = [Microsoft.VisualBasic.Interaction]::InputBox($msg, $title)
+$WPFtxtbox1.text = $gtname
+
+IF ($gtname -eq "") {return} 
+RunAll
+
+}
+
+Function RunAll{
+$adOpenStatic = 3
+$adLockOptimistic = 3
+$gtname = $WPFtxtbox1.text
+
+# look-up for ID code
+$conn=New-Object -com "ADODB.Connection"
+$rs = New-Object -com "ADODB.Recordset"
+$conn.Open('Provider=Microsoft.ACE.OLEDB.12.0;Data Source=K:\POS Database\POS Construction.mdb;Persist Security Info=True;')
+$rs.Open("SELECT ID, WFAN8, WFNUMB, WFCODE, WFITM, WFSRLN, WFHEATID FROM USPRGDTA_JEFXAARCP WHERE ID = " + $WPFtxtbox1.text,$conn,$adOpenStatic,$adLockOptimistic)
+$strSku = $rs.Fields.Item("WFITM").value
+$WPFtxtbox_sn.text = $rs.Fields.Item("WFAN8").value
+$WPFtxtbox_sernum.text = $rs.Fields.Item("WFSRLN").value
+$strSNnumber = $rs.Fields.Item("WFHEATID").value
+$WPFtxtbox_Rqn.Text = "RE" + $strSNnumber
+$WPFtxtbox_Sku.Text = $strSku
+$WPFtxtbox_assitID.Text = $rs.Fields.Item("WFNUMB").value
+$strRCi=$rs.RecordCount
+$conn.Close
+$rs.Close
+write-host $strRCi " total records found" -ForegroundColor Cyan
+
+# Look-up for s/n, if above qruey failed
+if($strRCi -lt 1){
+$conn1=New-Object -com "ADODB.Connection"
+$rs1 = New-Object -com "ADODB.Recordset"
+$rs1.Open("SELECT ID, WFAN8, WFCODE, WFNUMB, WFITM, WFSRLN, WFHEATID FROM USPRGDTA_JEFXAARCP WHERE WFSRLN = '" + $gtname + "' and WFCODE = 'R'",$conn,$adOpenStatic,$adLockOptimistic)
+$strRCi1=$rs1.RecordCount
+$rs1.Movelast()
+$WPFtxtbox1.text = $rs1.Fields.Item("ID").value
+$WPFtxtbox_sn.text = $rs1.Fields.Item("WFAN8").value
+$strSku = $rs1.Fields.Item("WFITM").value
+$WPFtxtbox_sernum.text = $gtname
+$strSNnumber = $rs1.Fields.Item("WFHEATID").value
+$WPFtxtbox_Rqn.Text = "RE" + $strSNnumber
+$WPFtxtbox_Sku.Text = $strSku
+$WPFtxtbox_assitID.Text = $rs1.Fields.Item("WFNUMB").value
+$strRCi=$rs1.RecordCount
+$conn1.Close
+$rs1.Close
+write-host $WPFtxtbox1.text " total records found" -ForegroundColor Cyan
+write-host $strRCi1 " total records found" -ForegroundColor Cyan
+}
+else {
+write-host "record not found" -ForegroundColor Cyan
+}
+
+
+#Check if record exists in service table
+$rs4 = New-Object -com "ADODB.Recordset"
+try{
+$rs4.Open("SELECT ID, Condition, Reason_Retruned, Problem, Date, Services_Preformed, Tester, [Reported Error], SNRequest, Disposition, TimeEst FROM POS_Service_Tracker WHERE ID = " + $WPFtxtbox1.text,$conn,$adOpenStatic,$adLockOptimistic)
+$strRCi4=$rs4.RecordCount
+}
+catch{
+    $ErrorMessage = $_.Exception.Message
+    $FailedItem = $_.Exception.ItemName
+[System.Windows.MessageBox]::Show("new/old Can't Conntext to DataBase`n`n" + $ErrorMessage + $FailedItem)
+}
+
+if ($strRCi4 -eq 0)
+{
+$WPFtxtstate.Text = "New"
+}
+else
+{
+$WPFtxtstate.Text = "Exists"
+$strPro = $rs4.Fields.Item("Problem").value
+$WPFcombox_cond.text = $rs4.Fields.Item("Condition").value
+$WPFcombox_reason.text = $rs4.Fields.Item("Reason_Retruned").value
+$WPFtextBox_serpre.text = $rs4.Fields.Item("Services_Preformed").value
+$WPFcombox_tester.text = $rs4.Fields.Item("Tester").value
+$WPFcombox_match.text = $rs4.Fields.Item("Reported Error").value
+$WPFcombox_Status.text = $rs4.Fields.Item("Disposition").value
+$WPFtxtTimeEst.text = $rs4.Fields.Item("TimeEst").value
+}
+$rs4.Close
+
+# Check for history by serial number
+$conn2=New-Object -com "ADODB.Connection"
+$rs2 = New-Object -com "ADODB.Recordset"
+#$rs2.Open("SELECT ID, WFCODE, WFSRLN, WFDATE, WFHEATID FROM USPRGDTA_JEFXAARCP WHERE WFSRLN = '" + $WPFtxtbox_sernum.text + "' and WFCODE = 'R'",$conn,$adOpenStatic,$adLockOptimistic)
+$rs2.Open("SELECT ID, WFCODE, WFSRLN, WFDATE, WFHEATID FROM USPRGDTA_JEFXAARCP WHERE WFSRLN = '" + $WPFtxtbox_sernum.text + "' and WFCODE = 'R' and ID <> " + $WPFtxtbox1.Text + " ORDER BY ID DESC",$conn,$adOpenStatic,$adLockOptimistic)
+#$serv100 = "RE" + $rs2.Fields.Item("WFHEATID").value
+
+$WPFlistbox1.Items.Clear();
+
+while ($rs2.EOF -ne $True) {
+$m1 = $rs2.Fields.Item("WFDATE").value.substring(6,2)
+$d1 = $rs2.Fields.Item("WFDATE").value.substring(4,2)
+$y1 = $rs2.Fields.Item("WFDATE").value.substring(0,4)
+$dmy = $d1 + "/" + $m1 + "/" + $y1
+$ab1 = '' + $rs2.Fields.Item("ID").value + ', ' +$dmy + ", " + "RE" + $rs2.Fields.Item("WFHEATID").value
+$WPFlistbox1.items.Add($ab1)
+$rs2.movenext()
+}
+$WPFlistbox1.add
+
+$conn2.Close
+$rs2.Close
+
+$conn=New-Object -com "ADODB.Connection"
+$rs = New-Object -com "ADODB.Recordset"
+$conn.Open('Provider=Microsoft.ACE.OLEDB.12.0;Data Source=K:\POS Database\POS Construction.mdb;Persist Security Info=True;')
+$rs.Open("SELECT ID, EQUIPMENT FROM EQUIPMENTLIST WHERE ID = " + $WPFtxtbox_Sku.Text,$conn,$adOpenStatic,$adLockOptimistic)
+$strEqup = $rs.Fields.Item("EQUIPMENT").value
+$WPFtxtbox_Equp.text = $strEqup.trim()
+$conn.Close
+$rs.Close
+SetDefults
+
+if($WPFtxtstate.Text -eq "Exists"){
+
+$stgCB1 = $WPFCB_1.content
+$stgCB2 = $WPFCB_2.Content
+$stgCB3 = $WPFCB_3.Content
+$stgCB4 = $WPFCB_4.Content
+$stgCB5 = $WPFCB_5.Content
+$stgCB6 = $WPFCB_6.Content
+$stgCB7 = $WPFCB_7.Content
+$stgCB8 = $WPFCB_8.Content
+$stgCB9 = $WPFCB_9.Content
+$stgCB10 = $WPFCB_10.Content
+$stgCB11 = $WPFCB_11.Content
+$stgCB12 = $WPFCB_12.Content
+$stgCB13 = $WPFCB_13.Content
+$stgCB14 = $WPFCB_14.Content
+$stgCB15 = $WPFCB_15.Content
+$stgCB16 = $WPFCB_16.Content
+
+foreach($i in 1..16){
+$arr = $strPro -Split ";;"
+}
+
+$ctr=1
+
+$stgCB1, $stgCB2, $stgCB3, $stgCB4, $stgCB5, $stgCB6, $stgCB7, $stgCB8, $stgCB9, $stgCB10, $stgCB11, $stgCB12, $stgCB13, $stgCB14, $stgCB15,$stgCB16 | ForEach-Object {if ($arr.TrimStart(";").TrimEnd(";") -eq $_){
+
+if($ctr -eq 1){$WPFCB_1.IsChecked = $true} 
+elseif ($ctr -eq 2){$WPFCB_2.IsChecked = $true}
+elseif ($ctr -eq 3){$WPFCB_3.IsChecked = $true}
+elseif ($ctr -eq 4){$WPFCB_4.IsChecked = $true}
+elseif ($ctr -eq 5){$WPFCB_5.IsChecked = $true}
+elseif ($ctr -eq 6){$WPFCB_6.IsChecked = $true}
+elseif ($ctr -eq 7){$WPFCB_7.IsChecked = $true}
+elseif ($ctr -eq 8){$WPFCB_8.IsChecked = $true}
+elseif ($ctr -eq 9){$WPFCB_9.IsChecked = $true}
+elseif ($ctr -eq 10){$WPFCB_10.IsChecked = $true}
+elseif ($ctr -eq 11){$WPFCB_11.IsChecked = $true}
+elseif ($ctr -eq 12){$WPFCB_12.IsChecked = $true}
+elseif ($ctr -eq 13){$WPFCB_13.IsChecked = $true}
+elseif ($ctr -eq 14){$WPFCB_14.IsChecked = $true}
+elseif ($ctr -eq 15){$WPFCB_15.IsChecked = $true}
+elseif ($ctr -eq 16){$WPFCB_16.IsChecked = $true}
+}
+$ctr++
+} 
+}
+
+#servicenow look up (JSON) sc_request table
+$request = 'https://regis.service-now.com/sc_request.do?JSONv2&sysparm_action=getRecords&sysparm_query=number=' + $WPFtxtbox_Rqn.Text
+$username = "UserName"
+$password = "Password" | ConvertTo-SecureString -asPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential($username,$password)
+$cv = Invoke-WebRequest $request -Credential $cred  |
+ConvertFrom-Json
+$strIncNum = $cv.records.parent
+$WPFtxtbox_IncNu.Text = $strIncNum
+
+#servicenow look up (JSON) incident table
+$request = 'https://regis.service-now.com/incident.do?JSONv2&sysparm_action=getRecords&sysparm_query=number=' + $strIncNum 
+$username = "UserName"
+$password = "Password" | ConvertTo-SecureString -asPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential($username,$password)
+$cv = Invoke-WebRequest $request -Credential $cred  |
+ConvertFrom-Json
+$WPFtxtbox_KB.Text = $cv.records.u_kb_article
+$sss = $cv.records.u_kb_article
+$WPFtxtbox1_ShortD.Text = $cv.records.short_description 
+$WPFtxtbox_Desc.Text = $cv.records.description 
+
+#servicenow look up (JSON) kb_knowledge table
+$KBlookup = 'https://regis.service-now.com/kb_knowledge.do?JSONv2&sysparm_action=getRecords&sysparm_query=display_number=' + $sss
+$username = "UserName"
+$password = "Password" | ConvertTo-SecureString -asPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential($username,$password)
+$cv4 = Invoke-WebRequest $KBlookup -Credential $cred  |
+ConvertFrom-Json
+$KBlookupvalue = $cv4.records.short_description
+$WPFtxtbox_KB_Desc.text = $KBlookupvalue
+$WPFtextBox_serpre.Focus()
+#$conn=New-Object -com "ADODB.Connection"
+#$rs = New-Object -com "ADODB.Recordset"
+#$conn.Open('Provider=Microsoft.ACE.OLEDB.12.0;Data Source=K:\POS Database\POS Construction.mdb;Persist Security Info=True;')
+#$rs.Open("SELECT number, short_description FROM Kb_knowledge WHERE number = " + "'$sss'" + "",$conn,$adOpenStatic,$adLockOptimistic)
+#$WPFtxtbox_KB_Desc.text = $rs.Fields.Item("short_description").value
+#write $rs
+#$conn.Close
+#$rs.Close
+
+    $Stopwatch.Start()
+    $Timer.Add_Tick({$WPFTime.Text = "$($Stopwatch.Elapsed.Minutes.ToString("00")):$($Stopwatch.Elapsed.Seconds.ToString("00"))"})
+    $Timer.Start()
+}
+
+
+$WPFbutton_Close.Add_Click({exit})
+
+# Create a stopwatch and a timer object
+#$stopwatch =  [system.diagnostics.stopwatch]::StartNew()
+$Stopwatch = New-Object System.Diagnostics.Stopwatch
+$Timer = New-Object System.Windows.Forms.Timer
+    $Timer.Enabled = $true
+    $Timer.Interval = 55
+ 
+# Start button event
+$WPFStart.Add_Click({
+    $Stopwatch.Start()
+    $Timer.Add_Tick({$WPFTime.Text = "$($Stopwatch.Elapsed.Minutes.ToString("00")):$($Stopwatch.Elapsed.Seconds.ToString("00"))"})
+    $Timer.Start()
+})
+ 
+# Stop button event
+$WPFStop.Add_Click({
+     
+    if (!$Stopwatch.IsRunning) { return }
+    $Timer.Stop()
+    $Stopwatch.Stop()
+})
+ 
+# Reset button event
+$WPFReset.Add_Click({
+ 
+    if ($Stopwatch.IsRunning) { return }
+    $Stopwatch.Reset()
+    $WPFTime.Text = "00:00"
+})
+
+
+
+$WPFtxtbox1.Add_keydown({funenter})
+
+function funenter{
+
+if ($_.Key-eq "Return"){
+    runall
+}
+}
+
+
+$WPFbutton_history.Add_Click({
+$strID = $WPFlistbox1.SelectedItems
+$strID3 =$strID.substring(0,6)
+$strID5 =$strID.substring(20,10)
+Hist
+ })
+
+$WPFbutton_clearform.Add_Click({
+Clearform
+
+    $Stopwatch.Reset()
+    $WPFTime.Text = "00:00"
+
+#IDenter
+ })
+
+$WPFbutton.Add_Click({
+
+IF ($WPFCB_1.isChecked) {$StrValPro = ";" + $WPFCB_1.content + ";" }
+IF ($WPFCB_2.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_2.content + ";" }
+IF ($WPFCB_3.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_3.content + ";" }
+IF ($WPFCB_4.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_4.content + ";" }
+IF ($WPFCB_5.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_5.content + ";" }
+IF ($WPFCB_6.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_6.content + ";" }
+IF ($WPFCB_7.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_7.content + ";" }
+IF ($WPFCB_8.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_8.content + ";" }
+IF ($WPFCB_9.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_9.content + ";" }
+IF ($WPFCB_10.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_10.content + ";" }
+IF ($WPFCB_11.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_11.content + ";" }
+IF ($WPFCB_12.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_12.content + ";" }
+IF ($WPFCB_13.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_13.content + ";" }
+IF ($WPFCB_14.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_14.content + ";" }
+IF ($WPFCB_15.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_15.content + ";" }
+IF ($WPFCB_16.isChecked) {$StrValPro = $StrValPro + ";" + $WPFCB_16.content + ";" }
+
+IF ($WPFCB_txtOther.Text -notlike "Other: ") {$StrValPro = $StrValPro + ";" + $WPFCB_txtOther.Text + ";"}
+
+IF ($WPFcombox_tester.Text -eq "Tester?") {
+$wshell = New-Object -ComObject Wscript.Shell
+$wshell.Popup("A valid Tester must be Selected",0,"Done",0x1)
+}
+ElseIF ($WPFcombox_match.Text -eq "Reported Error") {
+$wshell = New-Object -ComObject Wscript.Shell
+$wshell.Popup("A valid Reported Error must be Selected",0,"Done",0x1)
+}
+ElseIf ($WPFcombox_reason.Text -eq "Reason Retruned"){
+$wshell = New-Object -ComObject Wscript.Shell
+$wshell.Popup("A valid Reason Retruned must be Selected",0,"Done",0x1)
+}
+IF ($WPFcombox_cond.Text -eq "Return Condition"){
+$wshell = New-Object -ComObject Wscript.Shell
+$wshell.Popup("A valid Return Condition must be Selected",0,"Done",0x1)
+}
+ElseIF ($WPFcombox_Status.Text -eq "Selection Required") {
+$wshell = New-Object -ComObject Wscript.Shell
+$wshell.Popup("A valid Unit Status must be Selected",0,"Done",0x1)
+}
+ElseIf ($StrValPro.Text -eq "") { 
+$wshell = New-Object -ComObject Wscript.Shell
+$wshell.Popup("A valid Problem Found needs to be checked",0,"Done",0x1)
+}
+Else {
+
+#updated record if exists
+$strdate = Get-Date -Format g
+IF ($WPFtxtstate.Text -eq "Exists"){
+$adOpenStatic = 3
+$adLockOptimistic = 3
+try{
+$conn5=New-Object -com "ADODB.Connection"
+$rs5 = New-Object -com "ADODB.Recordset"
+$conn5.Open('Provider=Microsoft.ACE.OLEDB.12.0;Data Source=K:\POS Database\POS Construction.mdb;Persist Security Info=True;')
+$rs5.Open("SELECT ID, Condition, Reason_Retruned, Problem, Date, Services_Preformed, Tester, 'Reported Error', SNRequest, Disposition, TimeEst FROM POS_Service_Tracker WHERE ID = " + $WPFtxtbox1.text, $conn5,$adOpenStatic,$adLockOptimistic)
+}
+catch{
+    $ErrorMessage = $_.Exception.Message
+    $FailedItem = $_.Exception.ItemName
+[System.Windows.MessageBox]::Show("Can't Conntext to DataBase`n`n" + $ErrorMessage + $FailedItem)
+}
+
+$rs5.Fields.Item("Condition").value = $WPFcombox_cond.Text
+$rs5.Fields.Item("Reason_Retruned").value = $WPFcombox_reason.Text
+$rs5.Fields.Item("Problem").value = $StrValPro
+$rs5.Fields.Item("Date").value = $strdate
+$rs5.Fields.Item("Services_Preformed").value = $WPFtextBox_serpre.Text
+$rs5.Fields.Item("Tester").value = $WPFcombox_tester.Text
+$rs5.Fields.Item("Reported Error").value = $WPFcombox_match.Text
+$rs5.Fields.Item("SNRequest").value = $WPFtxtbox_KB.Text
+$rs5.Fields.Item("Disposition").value = $WPFcombox_Status.Text
+$rs5.Fields.Item("TimeEst").value = $WPFtxtTimeEst.Text
+$rs5.Update()
+$conn5.Close
+$rs5.Close
+}else{
+#added record
+$adOpenStatic = 3
+$adLockOptimistic = 3
+$conn=New-Object -com "ADODB.Connection"
+$rs = New-Object -com "ADODB.Recordset"
+try{
+$conn.Open('Provider=Microsoft.ACE.OLEDB.12.0;Data Source=K:\POS Database\POS Construction.mdb;Persist Security Info=True;')
+$rs.Open("SELECT * FROM POS_Service_Tracker",$conn,$adOpenStatic,$adLockOptimistic)
+}
+catch{
+[System.Windows.MessageBox]::Show("Record Not Saved.`n`n Can't Conntext to DataBase")
+    $ErrorMessage = $_.Exception.Message
+    $FailedItem = $_.Exception.ItemName
+[System.Windows.MessageBox]::Show("Record Not Saved.`n`n" + $ErrorMessage + $FailedItem)
+}
+
+$rs.AddNew()
+$rs.Fields.Item("ID").value = $WPFtxtbox1.text
+$rs.Fields.Item("Condition").value = $WPFcombox_cond.Text
+$rs.Fields.Item("Reason_Retruned").value = $WPFcombox_reason.Text
+$rs.Fields.Item("Problem").value = $StrValPro
+$rs.Fields.Item("Services_Preformed").value = $WPFtextBox_serpre.Text
+$rs.Fields.Item("Tester").value = $WPFcombox_tester.Text
+$rs.Fields.Item("Reported Error").value = $WPFcombox_match.Text
+$rs.Fields.Item("Disposition").value = $WPFcombox_Status.Text
+$rs.Fields.Item("SNRequest").value = $WPFtxtbox_KB.Text
+$rs.Fields.Item("TimeEst").value = $WPFtxtTimeEst.Text
+$rs.Update()
+$conn.Close
+$rs.Close
+}
+
+#Updates record to MasterAssetFile_LinkTable table 
+IF ($WPFcombox_Status.Text -eq "Move to ready stock") {
+$adOpenStatic = 3
+$adLockOptimistic = 3
+$conn=New-Object -com "ADODB.Connection"
+$rs = New-Object -com "ADODB.Recordset"
+$conn.Open('Provider=Microsoft.ACE.OLEDB.12.0;Data Source=K:\POS Database\POS Construction.mdb;Persist Security Info=True;')
+$rs.Open("SELECT ID, LinkToAssetMasterFile_LinkParent, ReadyToShip, Disposition, Date FROM MasterAssetFile_LinkTable WHERE LinkToAssetMasterFile_LinkParent = " + $WPFtxtbox_assitID.Text,$conn,$adOpenStatic,$adLockOptimistic)
+$rs.Fields.Item("ID").value
+$rs.Fields.Item("LinkToAssetMasterFile_LinkParent").value
+$rs.Fields.Item("ReadyToShip").value = -1
+$rs.Update()
+$conn.Close
+$rs.Close
+}
+
+RunAll
+Clearform
+#IDenter
+}
+$WPFtxtbox1.Focus()
+
+$Stopwatch.Reset()
+$WPFTime.Text = "00:00"
+
+})
+
+Get-FormVariables
+#IDenter
+$WPFtxtbox1.Focus()
+#===========================================================================
+# Shows the form
+#===========================================================================
+write-host "To show the form, run the following" -ForegroundColor Cyan
+$Form.ShowDialog() | out-null
